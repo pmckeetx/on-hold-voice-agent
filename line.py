@@ -76,7 +76,7 @@ class PharmacyLine:
         self.agent_started = -1.0  # call time the agent's latest stretch of speech started
         self.stretches: list[float] = []  # call times the agent started talking
         self.keys: asyncio.Queue[str] = asyncio.Queue()
-        self.marks: dict[str, tuple[float, float]] = {}  # clip -> (start, end) in call time
+        self.marks: dict[str, tuple[float, float]] = {}  # clip -> (start, end of speech) in call time
         self.pressed: list[tuple[float, str]] = []
         self.closed = asyncio.Event()
         self.t0 = 0.0
@@ -147,7 +147,8 @@ class PharmacyLine:
         self.queue = np.concatenate([self.queue, x])
         end = start + len(x) / RATE
         if name:
-            self.marks[name] = (round(start, 2), round(end, 2))
+            speech = np.nonzero(np.abs(x) > 0.01)[0]  # the clip's last loud sample, not its trailing silence
+            self.marks[name] = (round(start, 2), round(start + (speech[-1] + 1) / RATE, 2))
         while self.now() < end:
             await asyncio.sleep(0.02)
 

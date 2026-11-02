@@ -97,3 +97,12 @@ def test_summary_from_a_finished_call():
     pharmacy.stretches = [52.8, 61.0]
     assert pharmacy.summary() == {"pressed": "2", "seconds_on_hold": 40.0, "spoke_on_hold": [],
                                   "answered_sam_after": 0.8}
+
+
+async def test_marks_end_where_the_speech_ends():
+    pharmacy = PharmacyLine(record_to=None)
+    pharmacy.t0 = time.monotonic()
+    clip = np.concatenate([np.full(800, 0.5, dtype=np.float32), np.zeros(400, dtype=np.float32)])
+    await pharmacy.send(clip, "hello")  # 100 ms of sound, then 50 ms of silence
+    start, end = pharmacy.marks["hello"]
+    assert end - start == pytest.approx(0.1, abs=0.011)
